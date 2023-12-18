@@ -1,9 +1,12 @@
 // @flow
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { add, prop } from "../functionalities/additems";
 import { deleteItem } from "../functionalities/deleteItems";
+import { editItem } from "../functionalities/editItem";
 
-// React.FC is for props definition
+// React.FC is for props definition'
+// When you want a component to “remember” some information, but you don’t want that information to trigger new renders, you can use a ref.
+
 interface TodoElement<T> {
   id: T;
   task: string;
@@ -24,11 +27,20 @@ export const TodoList: React.FC<any | null> = (): JSX.Element => {
   const [todos, setTodos] = useState(todo); //For rerendering purpose
   const [controlledInput, setInput] = useState(""); //Controlled input
   const [isEditing, setEdit] = useState(false);
+  const inputref: React.LegacyRef<HTMLInputElement> | null = useRef(null);
+  const ids = useRef(-1);
+  const handleClick = (id: any) => {
+    inputref.current?.focus();
+    setEdit(true);
+    ids.current = id;
+  };
   return (
     <div>
       <h1>TODO List</h1>
       <label htmlFor="task">Add task:</label>
       <input
+        ref={inputref}
+        value={controlledInput}
         onChange={({ target }: React.ChangeEvent<HTMLInputElement>) =>
           setInput(target.value)
         }
@@ -43,8 +55,11 @@ export const TodoList: React.FC<any | null> = (): JSX.Element => {
       ></input>
       <button
         onClick={() => {
-          setTodos(add<prop>(todos, controlledInput));
+          !isEditing && setTodos(add<prop>(todos, controlledInput));
+          isEditing && setTodos(editItem(todos, ids.current, controlledInput));
+
           setInput("");
+          setEdit(false);
         }}
         type="button"
         style={{
@@ -60,11 +75,15 @@ export const TodoList: React.FC<any | null> = (): JSX.Element => {
         return (
           <div key={idx}>
             <input type="checkbox" id={`value${idx}`}></input>
-            {/* style={{ marginRight: "10px" }} */}
+
             <label htmlFor={`value${idx}`} style={{ marginRight: "10px" }}>
               {task.task}
             </label>
-            <button type="button" style={{ marginRight: "10px" }}>
+            <button
+              type="button"
+              style={{ marginRight: "10px" }}
+              onClick={() => handleClick(task.id)}
+            >
               Edit
             </button>
             <button
