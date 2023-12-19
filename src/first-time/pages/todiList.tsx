@@ -1,10 +1,11 @@
 // @flow
-import React, { useRef, useState } from "react";
+import React, { useReducer, useRef, useState } from "react";
 import { add, prop } from "../functionalities/additems";
 import { deleteItem } from "../functionalities/deleteItems";
 import { editItem } from "../functionalities/editItem";
 
 // React.FC is for props definition'
+
 // When you want a component to “remember” some information, but you don’t want that information to trigger new renders, you can use a ref.
 
 interface TodoElement<T> {
@@ -13,7 +14,7 @@ interface TodoElement<T> {
 }
 
 type TodoStructure = TodoElement<number>[];
-const todo: TodoStructure = [
+const todo: prop = [
   {
     id: 0,
     task: "Brush",
@@ -24,13 +25,17 @@ const todo: TodoStructure = [
   },
 ];
 export const TodoList: React.FC<any | null> = (): JSX.Element => {
-  const [todos, setTodos] = useState(todo); //For rerendering purpose
+  const [task, dispatch] = useReducer<React.Reducer<prop | any, Actions>>(
+    taskReducer,
+    todo
+  );
+  // const [todos, setTodos] = useState(todo); //For rerendering purpose
   const [controlledInput, setInput] = useState(""); //Controlled input
   const [isEditing, setEdit] = useState(false);
-  const inputref: React.LegacyRef<HTMLInputElement> | null = useRef(null);
+  const inputRef: React.LegacyRef<HTMLInputElement> | null = useRef(null);
   const ids = useRef(-1);
   const handleClick = (id: any) => {
-    inputref.current?.focus();
+    inputRef.current?.focus();
     setEdit(true);
     ids.current = id;
   };
@@ -39,7 +44,7 @@ export const TodoList: React.FC<any | null> = (): JSX.Element => {
       <h1>TODO List</h1>
       <label htmlFor="task">Add task:</label>
       <input
-        ref={inputref}
+        ref={inputRef}
         value={controlledInput}
         onChange={({ target }: React.ChangeEvent<HTMLInputElement>) =>
           setInput(target.value)
@@ -55,8 +60,20 @@ export const TodoList: React.FC<any | null> = (): JSX.Element => {
       ></input>
       <button
         onClick={() => {
-          !isEditing && setTodos(add<prop>(todos, controlledInput));
-          isEditing && setTodos(editItem(todos, ids.current, controlledInput));
+          // !isEditing && setTodos(add<prop>(todos, controlledInput));
+          !isEditing &&
+            dispatch({
+              type: "added",
+              controlledInput,
+            });
+          // isEditing && setTodos(editItem(todos, ids.current, controlledInput));
+
+          isEditing &&
+            dispatch({
+              type: "edited",
+              controlledInput,
+              id: ids.current,
+            });
 
           setInput("");
           setEdit(false);
@@ -71,23 +88,30 @@ export const TodoList: React.FC<any | null> = (): JSX.Element => {
       >
         Add
       </button>
-      {todos.map((task, idx) => {
+      {task.map((tasks: TodoElement<number>, idx: number) => {
         return (
           <div key={idx}>
             <input type="checkbox" id={`value${idx}`}></input>
 
             <label htmlFor={`value${idx}`} style={{ marginRight: "10px" }}>
-              {task.task}
+              {tasks.task}
             </label>
             <button
               type="button"
               style={{ marginRight: "10px" }}
-              onClick={() => handleClick(task.id)}
+              onClick={() => handleClick(tasks.id)}
             >
               Edit
             </button>
             <button
-              onClick={() => setTodos(deleteItem(todos, task.id))}
+              // onClick={() => setTodos(deleteItem(todos, task.id))}
+              // type="button"
+              onClick={() =>
+                dispatch({
+                  type: "deleted",
+                  id: tasks.id,
+                })
+              }
               type="button"
             >
               Delete
@@ -98,3 +122,30 @@ export const TodoList: React.FC<any | null> = (): JSX.Element => {
     </div>
   );
 };
+
+interface Actions {
+  type: string;
+  controlledInput?: string;
+  id?: number;
+}
+
+function taskReducer(tasks: prop, action: Actions) {
+  switch (action.type) {
+    case "added": {
+      if (typeof action.controlledInput == "string")
+        return add(tasks, action.controlledInput);
+      return tasks;
+    }
+    case "edited": {
+      if (action.controlledInput && action.id) {
+        return editItem(tasks, action.id, action.controlledInput);
+      }
+      return tasks;
+    }
+
+    case "deleted": {
+      if (typeof action.id == "number") return deleteItem(tasks, action.id);
+      return tasks;
+    }
+  }
+}
