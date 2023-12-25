@@ -1,8 +1,8 @@
 // @flow
 import React, { useEffect, useReducer, useRef, useState } from "react";
-import { add, prop } from "../functionalities/additems";
-import { deleteItem } from "../functionalities/deleteItems";
-import { editItem } from "../functionalities/editItem";
+import { add, prop } from "../util/additems";
+import { deleteItem } from "../util/deleteItems";
+import { editItem } from "../util/editItem";
 
 // React.FC is for props definition'
 
